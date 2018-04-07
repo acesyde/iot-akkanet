@@ -2,12 +2,12 @@
 
 namespace BuildingMonitor.Messages
 {
-    public sealed class RespondTemperatureSensorIds
+    public sealed class RespondFloorIds
     {
         public long RequestId { get; }
         public IImmutableSet<string> Ids { get; }
 
-        public RespondTemperatureSensorIds(long requestId, IImmutableSet<string> ids)
+        public RespondFloorIds(long requestId, IImmutableSet<string> ids)
         {
             RequestId = requestId;
             Ids = ids;

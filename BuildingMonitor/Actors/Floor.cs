@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Akka.Actor;
 using BuildingMonitor.Messages;
@@ -20,16 +21,21 @@ namespace BuildingMonitor.Actors
             switch (message)
             {
                 case RequestRegisterTemperatureSensor m when m.FloorId == _floorId:
-                    if(_sensorIdToActorRefs.TryGetValue(m.SensorId, out var existingSensorActorRef))
+                    if (_sensorIdToActorRefs.TryGetValue(m.SensorId, out var existingSensorActorRef))
+                    {
                         existingSensorActorRef.Forward(m);
-
-                    var newSensorActor = Context.ActorOf(TemperatureSensor.Props(_floorId, m.SensorId), $"temperature-sensor-{m.SensorId}");
-                    Context.Watch(newSensorActor);
-                    _sensorIdToActorRefs.Add(m.SensorId, newSensorActor);
-                    newSensorActor.Forward(m); 
+                    }
+                    else
+                    {
+                        var newSensorActor = Context.ActorOf(TemperatureSensor.Props(_floorId, m.SensorId),
+                            $"temperature-sensor-{m.SensorId}");
+                        Context.Watch(newSensorActor);
+                        _sensorIdToActorRefs.Add(m.SensorId, newSensorActor);
+                        newSensorActor.Forward(m);
+                    }
                     break;
                 case RequestTemperatureSensorIds m:
-                    Sender.Tell(new RespondTemperatureSensorIds(m.RequestId, new HashSet<string>(_sensorIdToActorRefs.Keys)));
+                    Sender.Tell(new RespondTemperatureSensorIds(m.RequestId, ImmutableHashSet.CreateRange(_sensorIdToActorRefs.Keys)));
                     break;
                 case Terminated m:
                     var terminatedTemperatureSensorId = _sensorIdToActorRefs.First(x => x.Value == m.ActorRef).Key;
